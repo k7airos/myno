@@ -12,6 +12,9 @@ import {
   getParser,
 } from "./article-menu";
 import { createDataImageUploadPlugin, dataImageFile } from "./image-upload";
+// 各语法类目的默认预设（h2 呼吸柱、引用样式等）是 myno 的默认观感，随编辑器一起生效；
+// studio 等宿主若在运行时注入自己的预设 CSS，后注入者按文档顺序覆盖这里的默认。
+import { buildCombinedPresetsCss } from "../studio/syntax-presets";
 
 import "@milkdown/crepe/theme/common/style.css";
 import "@milkdown/crepe/theme/frame.css";
@@ -45,6 +48,14 @@ export class MynoEditor {
 
   async create(): Promise<Crepe> {
     const { root, defaultValue = "", readonly = false, placeholder = "输入内容，或输入 / 快速插入文章组件...", uploadImage, plugins, featureConfigs, onCreated } = this.options;
+
+    let presetStyle = document.getElementById("myno-editor-preset-css") as HTMLStyleElement | null;
+    if (!presetStyle) {
+      presetStyle = document.createElement("style");
+      presetStyle.id = "myno-editor-preset-css";
+      document.head.appendChild(presetStyle);
+    }
+    presetStyle.textContent = buildCombinedPresetsCss({});
 
     const crepe = new Crepe({
       root,
