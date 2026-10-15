@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.0
+
+- Preserve descriptive image alt text, titles, node order and block-image resizing through Markdown round trips.
+- Store non-default descriptive-image ratios in adjacent versioned metadata shared by the editor, Studio source preview and browser export, while retaining numeric-alt ratio syntax.
+
 ## v0.3.2
 
 - Preserve Markdown images without a title when Milkdown validates image attributes.
