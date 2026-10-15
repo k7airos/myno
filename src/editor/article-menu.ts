@@ -120,13 +120,9 @@ export function applyInline(ctx: Ctx, item: InlineItem, slash = false) {
     if (alreadyHasExactMark) {
       tr.removeMark(from, to, markType);
     } else {
-      // 切换徽章类型时，先清除已存在的旧徽章/行内标记
-      if (item.mark === "badge") {
-        const badgeMark = state.schema.marks.badge;
-        if (badgeMark) tr.removeMark(from, to, badgeMark);
-      } else if (item.mark === "kbd") {
-        const kbdMark = state.schema.marks.kbd;
-        if (kbdMark) tr.removeMark(from, to, kbdMark);
+      // 徽章和按键使用纯文字，避免保存成解析器不支持的嵌套 Markdown（如 **[[kbd:…]]** 往返丢失）。
+      if (item.mark === "badge" || item.mark === "kbd") {
+        tr.removeMark(from, to);
       } else if (item.mark === "highlight") {
         for (const name of inlineMarks) {
           const m = state.schema.marks[name];
