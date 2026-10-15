@@ -1,0 +1,30 @@
+/*
+ * Default editorial tokens (sage-journal / default account) by Kairos.
+ *
+ * Export path injects the same variables via buildWechatThemeCss(themes.ts).
+ * Live hosts (Nezus editor) should load this file so article.css resolves.
+ *
+ * Override by redefining --wx-* on a parent or on `.milkdown .editor`.
+ */
+
+.milkdown .editor {
+  --wx-font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif;
+  --wx-body-color: #292526;
+  --wx-muted-color: #6f696b;
+  /* Heading chroma: H2 slightly deeper than body; H3 between body and muted.
+   * Prefer color hierarchy over font-weight 600 (unreliable on many CJK system fonts / WeChat). */
+  --wx-h2-color: #1f1b1c;
+  --wx-h3-color: #5c5658;
+  --wx-brand-ink: #a94473;
+  --wx-brand-accent: #ca6093;
+  --wx-brand-bg: rgba(202, 96, 147, 0.08);
+  --wx-divider-color: #e2dcdf;
+  --wx-divider: #eae4e7;
+  --wx-blockquote-border: #ca6093;
+  --wx-body-line-height: 1.84;
+  --wx-body-letter-spacing: 0.012em;
+  --wx-soft-surface: #faf8f9;
+  --wx-text-soft: #555555;
+  --wx-text-mid: #3c4043;
+}

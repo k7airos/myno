@@ -1,6 +1,6 @@
 {
   "name": "@akairos/myno",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "WeChat article WYSIWYG editor & visual typography studio",
   "type": "module",
   "license": "MIT",
@@ -30,11 +30,15 @@
       "types": "./dist/editor/article-menu.d.ts",
       "default": "./dist/editor/article-menu.js"
     },
-    "./style": "./dist/style.css"
+    "./style": "./dist/styles/index.css",
+    "./article.css": "./dist/styles/article.css",
+    "./tokens-default.css": "./dist/styles/tokens-default.css"
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "dev": "vite",
@@ -48,7 +52,6 @@
   },
   "dependencies": {
     "@akairos/milkdown-article-plugins": "^0.1.3",
-    "@akairos/milkdown-article-style": "^0.1.1",
     "juice": "^12.2.0"
   },
   "devDependencies": {

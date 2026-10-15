@@ -19,8 +19,8 @@ import { buildWechatThemeCss, getWechatPreviewTheme } from "../studio/themes";
 
 import "@milkdown/crepe/theme/common/style.css";
 import "@milkdown/crepe/theme/frame.css";
-import "@akairos/milkdown-article-style/tokens-default.css";
-import "@akairos/milkdown-article-style/article.css";
+import "../styles/tokens-default.css";
+import "../styles/article.css";
 
 export interface MynoEditorOptions {
   root: HTMLElement;

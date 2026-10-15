@@ -2,7 +2,7 @@
 
 > 🎨 WeChat article WYSIWYG editor & visual typography studio.
 
-`myno` 是面向微信公众号文章的所见即所得编辑器引擎与现代排版工作台。基于 `@milkdown/crepe` 封装，深度集成 `@akairos/milkdown-article-plugins` 与 `@akairos/milkdown-article-style`。
+`myno` 是面向微信公众号文章的所见即所得编辑器引擎与现代排版工作台。基于 `@milkdown/crepe` 封装，集成 `@akairos/milkdown-article-plugins`，统一维护正文 CSS、默认主题变量与微信导出样式。
 
 ## 生态与使用者
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | [zzhub-pipeline](https://github.com/k7airos/zzhub-pipeline) · [`@akairos/pipeline`](https://www.npmjs.com/package/@akairos/pipeline) | 从 0.19.0 起可选安装 myno，通过 `plugins.markdownRenderer` 使用本包的排版和工作台资源，负责浏览器运行、文件输出和草稿发布 |
 | [Milkdown Article Plugins](https://github.com/k7airos/milkdown-article-plugins) | myno 的直接依赖，提供扩展语法、输入转换、Markdown 序列化和微信组件渲染 |
-| [Milkdown Article Style](https://github.com/k7airos/milkdown-article-style) | myno 的直接依赖，提供正文 CSS 与默认主题变量 |
+| [Milkdown Article Style](https://github.com/k7airos/milkdown-article-style) | 旧版兼容包；从 myno 0.3.1 起，正文 CSS 与默认主题变量收归 myno |
 | [Typeset Studio](https://github.com/k7airos/typeset-studio) | 配套的封面、卡片和多页 PNG 设计器，可与 myno 同时作为 Pipeline 插件；两者互不依赖 |
 | [Kairos Skills](https://github.com/k7airos/kairos-skills) | 供 Agent 使用的写作语法与发布编排说明 |
 
@@ -47,6 +47,16 @@ await editor.create();
 ```
 
 `uploadImage` 由宿主注入上传函数；`plugins`、`featureConfigs`、`onCreated` 用于宿主扩展。`styleConfig` / `applyStyleConfig()` 接收 `editorVars`、`exportTheme` 和 `syntaxPresets`，不代表支持完整导出配置中的自定义 CSS 或页首结构。Node 测试只测菜单时使用 `@akairos/myno/menu`，避免编辑器 CSS 导入。
+
+### 仅复用正文样式
+
+```ts
+import "@akairos/myno/tokens-default.css";
+import "@akairos/myno/article.css";
+// 或一次加载两者：import "@akairos/myno/style";
+```
+
+以上为纯 CSS 入口，不加载编辑器 JavaScript。样式源文件位于 `src/styles/`，编辑器、Studio 和导出共用。表格表头保持单行，超出正文宽度时左右滚动，正文单元格允许换行。更新 CSS 后需重建 myno；Pipeline 内置导出也需更新依赖并重建浏览器资源。
 
 ## 独立启动工作台
 
