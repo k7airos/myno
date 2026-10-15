@@ -15,6 +15,7 @@ import { createDataImageUploadPlugin, dataImageFile } from "./image-upload";
 // 各语法类目的默认预设（h2 呼吸柱、引用样式等）是 myno 的默认观感，随编辑器一起生效；
 // studio 等宿主若在运行时注入自己的预设 CSS，后注入者按文档顺序覆盖这里的默认。
 import { buildCombinedPresetsCss } from "../studio/syntax-presets";
+import { buildWechatThemeCss, getWechatPreviewTheme } from "../studio/themes";
 
 import "@milkdown/crepe/theme/common/style.css";
 import "@milkdown/crepe/theme/frame.css";
@@ -35,7 +36,18 @@ export interface MynoEditorOptions {
   featureConfigs?: CrepeConfig["featureConfigs"];
   /** create 完成后的逃生舱（可拿到 Crepe 实例做进一步定制）。 */
   onCreated?: (crepe: Crepe) => void | Promise<void>;
+  /**
+   * 排版 config（studio 导出的那套 JSON 的核心字段）：选中预设替换默认、主题变量覆盖观感。
+   * 结构上兼容 parseStyleConfig 的结果——多余字段忽略；运行时更新用 applyStyleConfig()。
+   */
+  styleConfig?: {
+    editorVars?: Record<string, string>;
+    exportTheme?: Record<string, string | undefined>;
+    syntaxPresets?: Record<string, string>;
+  };
 }
+
+const PRESET_STYLE_ID = "myno-editor-preset-css";
 
 export class MynoEditor {
   private crepe: Crepe | null = null;
@@ -47,15 +59,9 @@ export class MynoEditor {
   }
 
   async create(): Promise<Crepe> {
-    const { root, defaultValue = "", readonly = false, placeholder = "输入内容，或输入 / 快速插入文章组件...", uploadImage, plugins, featureConfigs, onCreated } = this.options;
+    const { root, defaultValue = "", readonly = false, placeholder = "输入内容，或输入 / 快速插入文章组件...", uploadImage, plugins, featureConfigs, onCreated, styleConfig } = this.options;
 
-    let presetStyle = document.getElementById("myno-editor-preset-css") as HTMLStyleElement | null;
-    if (!presetStyle) {
-      presetStyle = document.createElement("style");
-      presetStyle.id = "myno-editor-preset-css";
-      document.head.appendChild(presetStyle);
-    }
-    presetStyle.textContent = buildCombinedPresetsCss({});
+    this.applyStyleConfig(styleConfig);
 
     const crepe = new Crepe({
       root,
@@ -125,6 +131,30 @@ export class MynoEditor {
 
     this.crepe = crepe;
     return crepe;
+  }
+
+  /** 运行时更新排版样式（config 异步加载完成后调用；undefined = 回到出厂默认）。 */
+  applyStyleConfig(styleConfig?: MynoEditorOptions["styleConfig"]) {
+    let styleTag = document.getElementById(PRESET_STYLE_ID) as HTMLStyleElement | null;
+    if (!styleTag) {
+      styleTag = document.createElement("style");
+      styleTag.id = PRESET_STYLE_ID;
+      document.head.appendChild(styleTag);
+    }
+    const presets = buildCombinedPresetsCss(styleConfig?.syntaxPresets ?? {});
+    const hasTheme = styleConfig && (Object.keys(styleConfig.editorVars ?? {}).length > 0
+      || Object.keys(styleConfig.exportTheme ?? {}).filter(k => styleConfig.exportTheme![k] != null).length > 0);
+    // 导出主题的 Partial 字段合并到默认主题底上，编辑器内即所见即所得
+    const themeCss = hasTheme
+      ? buildWechatThemeCss(
+          styleConfig!.editorVars ?? {},
+          getWechatPreviewTheme("default", {
+            editorVars: styleConfig!.editorVars,
+            exportTheme: styleConfig!.exportTheme as never,
+          }).exportTheme,
+        )
+      : "";
+    styleTag.textContent = `${presets}\n${themeCss}`;
   }
 
   getMarkdown(): string {

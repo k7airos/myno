@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { STYLE_PACKS } from "./studio/style-packs";
 import { SYNTAX_CATEGORIES, buildCombinedPresetsCss } from "./studio/syntax-presets";
+import { buildWechatThemeCss, getWechatPreviewTheme } from "./studio/themes";
 import { parseStyleConfig, exportStyleConfigBlob } from "./studio/config-manager";
 import { inlineItems, articleBlockMenu, articleInlineToolbar } from "./editor/article-menu";
 
@@ -16,6 +17,15 @@ describe("myno syntax presets", () => {
   test("honors selection and falls back to first preset on unknown id", () => {
     expect(buildCombinedPresetsCss({ h2: "bottom-line" })).toContain("padding-bottom: 0.45em");
     expect(buildCombinedPresetsCss({ h2: "no-such-preset" })).toContain("padding-left: 9px");
+  });
+
+  test("merges partial export theme config onto default base", () => {
+    const theme = getWechatPreviewTheme("default", { editorVars: { "--brand": "#123456" }, exportTheme: { bodyFontSize: "16px" } });
+    const css = buildWechatThemeCss({ "--brand": "#123456" }, theme.exportTheme);
+    expect(css).toContain("--wx-brand-accent: #123456");
+    expect(css).toContain("font-size: 16px");
+    // 未覆盖字段回落默认主题
+    expect(theme.exportTheme.h2Color).toBeDefined();
   });
 });
 

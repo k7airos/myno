@@ -9,7 +9,8 @@ import { STYLE_PACKS, type StylePack } from "./style-packs";
 import { SYNTAX_CATEGORIES, buildCombinedPresetsCss } from "./syntax-presets";
 import { COLOR_PALETTES } from "./color-palettes";
 import { parseStyleConfig, exportStyleConfigBlob, type StandaloneStyleConfig } from "./config-manager";
-import { renderWechatHtml, buildWechatThemeCss, type ArticleStructure } from "./wechat-renderer";
+import { renderWechatHtml, type ArticleStructure } from "./wechat-renderer";
+import { buildWechatThemeCss } from "./themes";
 import type { WechatExportTheme } from "./themes";
 
 interface AccountData {

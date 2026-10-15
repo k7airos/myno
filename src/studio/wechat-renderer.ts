@@ -1,5 +1,5 @@
 import juice from "juice/client";
-import type { WechatExportTheme } from "./themes";
+import { buildWechatThemeCss, type WechatExportTheme } from "./themes";
 import { getCombinedDefaultCss, getCombinedWechatRenderers } from "@akairos/milkdown-article-plugins";
 
 export type WechatElementKind =
@@ -628,54 +628,7 @@ async function runRendererPhase(
   }
 }
 
-function themeVariableDeclarations(
-  editorVars: Record<string, string>,
-  theme: WechatExportTheme,
-): string {
-  const customVariables = Object.entries(editorVars)
-    .filter(([name]) => /^--[a-z0-9-_]+$/i.test(name))
-    .map(([name, value]) => `${name}: ${value};`)
-    .join("\n");
-
-  return [
-    customVariables,
-    `--wx-font-family: ${theme.fontFamily};`,
-    `--wx-body-color: ${theme.bodyColor};`,
-    `--wx-muted-color: ${theme.mutedColor};`,
-    `--wx-h2-color: ${theme.h2Color};`,
-    `--wx-h3-color: ${theme.h3Color};`,
-    `--wx-brand-ink: ${theme.primaryColor};`,
-    `--wx-brand-accent: ${editorVars["--brand"] ?? "#ca6093"};`,
-    `--wx-divider-color: ${theme.dividerColor};`,
-    `--wx-blockquote-border: ${theme.blockquoteBorderColor};`,
-    `--wx-body-line-height: ${theme.bodyLineHeight};`,
-    `--wx-body-letter-spacing: ${theme.bodyLetterSpacing};`,
-    `--wx-soft-surface: ${editorVars["--bg-warm"] ?? "#faf8f9"};`,
-  ].filter(Boolean).join("\n");
-}
-
-export function buildWechatThemeCss(
-  editorVars: Record<string, string>,
-  theme: WechatExportTheme,
-): string {
-  return `
-.milkdown .editor {
-  ${themeVariableDeclarations(editorVars, theme)}
-  ${theme.containerStyle};
-  ${theme.bodyFontSize ? `font-size: ${theme.bodyFontSize};` : ""}
-}
-.milkdown .editor [data-wechat-node="footer"] {
-  ${theme.footerStyle};
-}
-.milkdown .editor p {
-  ${theme.bodyFontSize ? `font-size: ${theme.bodyFontSize};` : ""}
-  ${theme.bodyParagraphSpacing ? `margin-bottom: ${theme.bodyParagraphSpacing};` : ""}
-  ${theme.bodyLineHeight ? `line-height: ${theme.bodyLineHeight};` : ""}
-  ${theme.bodyLetterSpacing ? `letter-spacing: ${theme.bodyLetterSpacing};` : ""}
-  ${theme.bodyColor ? `color: ${theme.bodyColor};` : ""}
-}
-`;
-}
+// 主题 CSS 构建已移至纯模块 themes.ts（editor 层也要用，不能连带 juice）
 
 /**
  * 结构装饰（编号 / 章节标签 / 引用标签）在导出时是真实节点，编辑器里是 ::before。
