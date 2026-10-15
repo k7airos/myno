@@ -1,6 +1,6 @@
 {
   "name": "@akairos/myno",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "WeChat article WYSIWYG editor & visual typography studio",
   "type": "module",
   "license": "MIT",
