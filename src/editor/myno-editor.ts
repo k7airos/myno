@@ -12,6 +12,7 @@ import {
   getParser,
 } from "./article-menu";
 import { createDataImageUploadPlugin, dataImageFile } from "./image-upload";
+import { imageMarkdownPlugins } from "./image-markdown";
 // 各语法类目的默认预设（h2 呼吸柱、引用样式等）是 myno 的默认观感，随编辑器一起生效；
 // studio 等宿主若在运行时注入自己的预设 CSS，后注入者按文档顺序覆盖这里的默认。
 import { buildCombinedPresetsCss } from "../studio/syntax-presets";
@@ -97,6 +98,8 @@ export class MynoEditor {
     for (const plugin of plugins ?? []) {
       crepe.editor.use(plugin);
     }
+    // Crepe 先把独立图片转为 image-block，再统一缺失的 title，网络加载不参与解析。
+    crepe.editor.use(imageMarkdownPlugins);
     if (uploadImage) {
       // 粘贴/旧正文里的 base64 图片统一走调用方的上传入口回写 URL
       crepe.editor.use($prose(() =>

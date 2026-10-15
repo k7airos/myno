@@ -13,6 +13,7 @@ import { renderWechatHtml, type ArticleStructure } from "./wechat-renderer";
 import { buildWechatThemeCss } from "./themes";
 import type { WechatExportTheme } from "./themes";
 import { createLocalStudioConfig, loadStudioConfig } from "./studio-config";
+import { imageMarkdownPlugins } from "../editor/image-markdown";
 
 // 本地默认数据始终可用，宿主加载失败不会中断编辑器初始化。
 let studioConfig = createLocalStudioConfig();
@@ -338,7 +339,8 @@ async function doRender() {
         })
         .use(commonmark)
         .use(gfm)
-        .use(getCombinedMilkdownPlugins());
+        .use(getCombinedMilkdownPlugins())
+        .use(imageMarkdownPlugins);
       try {
         await editor.create();
         semanticHtml = editor.action(getHTML());

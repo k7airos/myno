@@ -7,6 +7,7 @@ import { getCombinedMilkdownPlugins } from "@akairos/milkdown-article-plugins";
 import { renderWechatHtml, type ArticleStructure } from "./wechat-renderer";
 import { buildCombinedPresetsCss } from "./syntax-presets";
 import type { WechatExportTheme } from "./themes";
+import { imageMarkdownPlugins } from "../editor/image-markdown";
 
 declare global {
   interface Window {
@@ -29,7 +30,7 @@ async function main() {
   const editor = Editor.make().config(ctx => {
     ctx.set(rootCtx, document.getElementById("editor-host")!);
     ctx.set(defaultValueCtx, payload.markdown);
-  }).use(commonmark).use(gfm).use(getCombinedMilkdownPlugins());
+  }).use(commonmark).use(gfm).use(getCombinedMilkdownPlugins()).use(imageMarkdownPlugins);
   try {
     await editor.create();
     const semantic = new DOMParser().parseFromString(editor.action(getHTML()), "text/html");
