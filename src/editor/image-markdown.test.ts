@@ -50,6 +50,31 @@ test("consumes only adjacent v1 ratio comments for individual descriptive images
   expect(tree.children.filter(node => node.type === "image-block").map(node => (node as typeof first).alt)).toEqual(["第一张", "第二张", "未知版本", "无效比例", "隔开图片", "0.50"]);
 });
 
+test("keeps preceding consecutive ratio comments and binds only the originally adjacent marker", () => {
+  const first = { type: "html", value: "<!-- myno-image-ratio:v1 0.25 -->" };
+  const adjacent = { type: "html", value: "<!-- myno-image-ratio:v1 0.50 -->" };
+  const image = { type: "image-block", url: "same.png", alt: "保留描述", title: "保留图注" };
+  const tree = { type: "root", children: [first, adjacent, image] };
+  remarkImageTitles()(tree);
+  expect(tree.children).toHaveLength(2);
+  expect(tree.children[0]).toBe(first);
+  const expectedImage = { ...image, mynoImageRatio: 0.5 };
+  expect(tree.children[1]).toEqual(expectedImage);
+});
+
+test("preserves ratio comments and images when their numeric value cannot serialize reversibly", () => {
+  for (const value of ["1000000000000000000000.00", "999999999999999999999.00", "9007199254740993.00"]) {
+    const comment = { type: "html", value: `<!-- myno-image-ratio:v1 ${value} -->` };
+    const image = { type: "image-block", url: "original.png", alt: "原始描述", title: "原始图注" };
+    const tree = { type: "root", children: [comment, image] };
+    remarkImageTitles()(tree);
+    expect(tree.children).toEqual([comment, image]);
+    expect(tree.children[0]).toBe(comment);
+    expect(tree.children[1]).toBe(image);
+    expect(image).not.toHaveProperty("mynoImageRatio");
+  }
+});
+
 test("extended block schema preserves alt and resizing per node while retaining numeric ratio syntax", async () => {
   const ctx = new Ctx(new Container(), new Clock()).inject(nodesCtx, []);
   const schemaPlugins = imageMarkdownPlugins.slice(-2);

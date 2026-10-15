@@ -14,12 +14,19 @@ function descriptiveAlt(alt: unknown): alt is string {
   return typeof alt === "string" && !!alt.length && Number.isNaN(Number(alt));
 }
 
+/** 解析和保存共用可逆的两位小数范围，拒绝科学计数法与舍入为零的比例。 */
+function encodedImageRatio(ratio: number): string | null {
+  if (!Number.isFinite(ratio) || ratio <= 0) return null;
+  const encoded = ratio.toFixed(2);
+  return /^(?:0|[1-9]\d*)\.\d{2}$/.test(encoded) && Number(encoded) > 0 ? encoded : null;
+}
+
 function imageRatioComment(node: MarkdownNode): number | null {
   const html = node.type === "html" ? node : node.type === "paragraph" && node.children?.length === 1 && node.children[0]?.type === "html" ? node.children[0] : null;
   const match = /^<!-- myno-image-ratio:v1 ((?:0|[1-9]\d*)\.\d{2}) -->$/.exec(html?.value ?? "");
   if (!match) return null;
   const ratio = Number(match[1]);
-  return Number.isFinite(ratio) && ratio > 0 && ratio !== 1 ? ratio : null;
+  return ratio !== 1 && encodedImageRatio(ratio) === match[1] ? ratio : null;
 }
 
 /** remark 用 null 表示缺少 title，Milkdown 7.21 的图片属性只接受字符串。 */
@@ -35,7 +42,6 @@ export function remarkImageTitles() {
         // 只消费相邻独立描述图的专用标记，不跨正文或按 URL 恢复属性。
         if (ratio === null || !image || !descriptiveAlt(image.alt)) continue;
         children.splice(index, 2, { ...image, type: "image-block", mynoImageRatio: ratio });
-        index -= 1;
       }
       node.children?.forEach(visit);
     };
@@ -75,8 +81,8 @@ const imageDescriptionSchema = imageBlockSchema.extendSchema(previous => ctx => 
         if (node.attrs.alt === null) return schema.toMarkdown.runner(state, node);
         const ratio = Number(node.attrs.ratio);
         if (!Number.isFinite(ratio) || ratio <= 0) throw new RangeError("图片缩放比例必须为有限正数");
-        const encoded = ratio.toFixed(2);
-        if (!/^(?:0|[1-9]\d*)\.\d{2}$/.test(encoded) || Number(encoded) <= 0) throw new RangeError("图片缩放比例无法保存为有效两位小数");
+        const encoded = encodedImageRatio(ratio);
+        if (encoded === null) throw new RangeError("图片缩放比例无法保存为有效两位小数");
         if (encoded !== "1.00") state.addNode("html", undefined, `<!-- myno-image-ratio:v1 ${encoded} -->`);
         state.openNode("paragraph");
         state.addNode("image", undefined, undefined, { title: node.attrs.caption, url: node.attrs.src, alt: node.attrs.alt });

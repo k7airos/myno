@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.1
+
+- Bind image-ratio metadata only to its originally adjacent image without consuming earlier consecutive comments.
+- Reject non-reversible ratio metadata during parsing, preserving the original comment and image instead of failing later serialization.
+
 ## v0.4.0
 
 - Preserve descriptive image alt text, titles, node order and block-image resizing through Markdown round trips.
