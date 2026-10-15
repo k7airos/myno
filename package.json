@@ -1,6 +1,6 @@
 {
   "name": "@akairos/myno",
-  "version": "0.1.4",
+  "version": "0.2.1",
   "description": "WeChat article WYSIWYG editor & visual typography studio",
   "type": "module",
   "license": "MIT",
@@ -20,6 +20,11 @@
       "types": "./dist/editor/index.d.ts",
       "default": "./dist/editor/index.js"
     },
+    "./menu": {
+      "import": "./dist/editor/article-menu.js",
+      "types": "./dist/editor/article-menu.d.ts",
+      "default": "./dist/editor/article-menu.js"
+    },
     "./style": "./dist/style.css"
   },
   "files": [
@@ -32,14 +37,18 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
+  "peerDependencies": {
+    "@milkdown/crepe": "^7.21.2",
+    "@milkdown/kit": "^7.21.2"
+  },
   "dependencies": {
     "@akairos/milkdown-article-plugins": "^0.1.3",
     "@akairos/milkdown-article-style": "^0.1.1",
-    "@milkdown/crepe": "^7.21.2",
-    "@milkdown/kit": "^7.21.2",
     "juice": "^12.2.0"
   },
   "devDependencies": {
+    "@milkdown/crepe": "^7.21.2",
+    "@milkdown/kit": "^7.21.2",
     "@types/bun": "latest",
     "typescript": "^5.7.0",
     "vite": "^7.1.10"

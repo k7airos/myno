@@ -209,15 +209,15 @@ export const articleInlineToolbar: NonNullable<ToolbarFeatureConfig["buildToolba
  * 常用组件直接出现在 / 斜杠菜单中，插入后由 @akairos/milkdown-article-plugins 深度解析和保存。
  */
 export const articleBlockMenu: NonNullable<BlockEditFeatureConfig["buildMenu"]> = (builder) => {
-  const group = builder.addGroup("article", "文章专属组件");
+  const group = builder.addGroup("article", "文章组件");
   const blocks: [string, string, string][] = [
-    ["intro", "导读卡片 (INTRO)", "> [!INTRO] 导读\n> 在此处填写文章核心观点或背景提炼。"],
-    ["cta", "文末互动 (CTA)", "> [!CTA] 交流与讨论\n> 欢迎在评论区分享你的经验与思考。"],
-    ["note", "提示卡片 (NOTE)", "> [!NOTE]\n> 请填写背景上下文或参考提示。"],
-    ["tip", "建议卡片 (TIP)", "> [!TIP]\n> 请填写技巧建议或最佳实践。"],
-    ["important", "重点卡片 (IMPORTANT)", "> [!IMPORTANT]\n> 请填写核心关键点。"],
-    ["warning", "警告卡片 (WARNING)", "> [!WARNING]\n> 请填写需特别留意的风险事项。"],
-    ["caution", "注意卡片 (CAUTION)", "> [!CAUTION]\n> 请填写潜在危险或破坏性操作提示。"],
+    ["intro", "导读", "> [!INTRO] 导读\n> 请填写导读。"],
+    ["cta", "文末互动", "> [!CTA] 交流与反馈\n> 请填写互动内容。"],
+    ["note", "提示", "> [!NOTE]\n> 请填写提示内容。"],
+    ["tip", "建议", "> [!TIP]\n> 请填写建议内容。"],
+    ["important", "重点", "> [!IMPORTANT]\n> 请填写重点内容。"],
+    ["warning", "警告", "> [!WARNING]\n> 请填写警告内容。"],
+    ["caution", "注意", "> [!CAUTION]\n> 请填写注意内容。"],
   ];
 
   for (const [key, label, markdown] of blocks) {

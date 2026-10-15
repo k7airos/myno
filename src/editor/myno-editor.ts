@@ -1,4 +1,8 @@
 import { Crepe } from "@milkdown/crepe";
+import type { CrepeConfig } from "@milkdown/crepe";
+import type { MilkdownPlugin } from "@milkdown/kit/ctx";
+import { uploadConfig } from "@milkdown/kit/plugin/upload";
+import { $prose } from "@milkdown/kit/utils";
 import { getCombinedMilkdownPlugins } from "@akairos/milkdown-article-plugins";
 import {
   articleBlockMenu,
@@ -7,6 +11,7 @@ import {
   getEditorView,
   getParser,
 } from "./article-menu";
+import { createDataImageUploadPlugin, dataImageFile } from "./image-upload";
 
 import "@milkdown/crepe/theme/common/style.css";
 import "@milkdown/crepe/theme/frame.css";
@@ -19,6 +24,14 @@ export interface MynoEditorOptions {
   readonly?: boolean;
   placeholder?: string;
   onMarkdownChange?: (markdown: string) => void;
+  /** 图片上传由调用方注入（COS/本地/自建均可），返回最终 URL；不传则图片保持原样。 */
+  uploadImage?: (file: File) => Promise<string>;
+  /** 追加的 milkdown 插件（如 emoji、frontmatter），在文章插件之后加载。 */
+  plugins?: MilkdownPlugin[];
+  /** 覆盖/追加 Crepe featureConfigs，键冲突时覆盖内置默认。 */
+  featureConfigs?: CrepeConfig["featureConfigs"];
+  /** create 完成后的逃生舱（可拿到 Crepe 实例做进一步定制）。 */
+  onCreated?: (crepe: Crepe) => void | Promise<void>;
 }
 
 export class MynoEditor {
@@ -31,7 +44,7 @@ export class MynoEditor {
   }
 
   async create(): Promise<Crepe> {
-    const { root, defaultValue = "", readonly = false, placeholder = "输入内容，或输入 / 快速插入文章组件..." } = this.options;
+    const { root, defaultValue = "", readonly = false, placeholder = "输入内容，或输入 / 快速插入文章组件...", uploadImage, plugins, featureConfigs, onCreated } = this.options;
 
     const crepe = new Crepe({
       root,
@@ -58,10 +71,21 @@ export class MynoEditor {
           text: placeholder,
           mode: "doc",
         },
+        ...(uploadImage ? { [Crepe.Feature.ImageBlock]: { onUpload: uploadImage } } : {}),
+        ...featureConfigs,
       },
     });
 
     crepe.editor.use(getCombinedMilkdownPlugins());
+    for (const plugin of plugins ?? []) {
+      crepe.editor.use(plugin);
+    }
+    if (uploadImage) {
+      // 粘贴/旧正文里的 base64 图片统一走调用方的上传入口回写 URL
+      crepe.editor.use($prose(() =>
+        createDataImageUploadPlugin(async (src) => uploadImage(await dataImageFile(src)), () => false),
+      ));
+    }
 
     crepe.on((listener) => {
       listener.markdownUpdated((_ctx, markdown) => {
@@ -72,7 +96,14 @@ export class MynoEditor {
     });
 
     await crepe.create();
+    if (uploadImage) {
+      // 允许从剪贴板 HTML 中携带的图片文件触发上传
+      crepe.editor.action((ctx) => {
+        ctx.update(uploadConfig.key, (prev) => ({ ...prev, enableHtmlFileUploader: true }));
+      });
+    }
     crepe.setReadonly(readonly);
+    await onCreated?.(crepe);
 
     crepe.editor.action((ctx) => {
       const view = getEditorView(ctx);

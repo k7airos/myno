@@ -82,7 +82,7 @@ describe("myno editor menu specifications", () => {
     const registered: any[] = [];
     articleBlockMenu({
       addGroup: (_key: string, label: string) => {
-        expect(label).toBe("文章专属组件");
+        expect(label).toBe("文章组件");
         return {
           addItem: (k: string, item: any) => {
             registered.push({ key: k, ...item });
