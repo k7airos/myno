@@ -1,69 +1,38 @@
-# Handoff: myno ↔ nezus 编辑器统一集成
+# myno 维护与接入
 
-更新时间：2026-10-15。前序会话：a626c71b（方案制定 + myno 0.2.0 改造，429 中断）→ 本会话（完成全部落地）。
+更新日期：2026-10-15。当前 npm 基线 `@akairos/myno@0.3.0`，配套 Pipeline `0.19.0`。使用说明与公开生态入口见 [README](README.md)。本文记录当前边界，旧会话的测试数和临时服务地址不代表当前环境。
 
-## 背景与目标
+## 已交付
 
-nezus 里有一套平行演化、已行为漂移的 myno 编辑器副本（fork 的菜单、图片上传插件）。
-目标：**编辑器内核全部收进 `@akairos/myno`，nezus 只留 Vue 胶水**，消灭三处拷贝（nezus fork / pipeline 手动拷贝）。
+- `src/editor/myno-editor.ts` 提供 `MynoEditor`，支持 `uploadImage`、`plugins`、`featureConfigs`、`onCreated` 和 `styleConfig`。
+- `src/editor/image-upload.ts` 处理粘贴/已有正文中的 Data URL 图片；上传厂商由宿主注入。
+- 默认语法预设随编辑器加载；`applyStyleConfig()` 接受 `editorVars`、`exportTheme`、`syntaxPresets`。完整导出 JSON 中的自定义 CSS、页首结构不属于这个插槽。
+- `src/studio/studio-config.ts` 提供本地默认、语法说明和示例；编辑器先初始化，宿主配置成功后优先采用。迟到配置不覆盖已写正文。
+- 独立模式保留调样式、导入/导出、富文本复制和本地重置，隐藏账号保存/历史。Pipeline 模式沿用宿主账号配置和保存接口。
+- `src/adapter.ts` 的 `browser()` / `studio()` 只返回包内资源路径；Pipeline 负责 Chrome、超时、文件输出与发布。本包没有 Playwright、Puppeteer 或浏览器启动逻辑。
 
-## 已完成（全部已 commit，均未 push）
+## 分发与消费方
 
-### myno 侧（`@akairos/myno@0.2.4`，已发 npm）
+- npm `exports`：根入口、`./editor`、`./menu`、`./style`、`./adapter`，以 `package.json` 为准。
+- `bun run build` 先输出 TS 库，再构建 Studio 和 `editor-export.js`。运行时不从邻近源码目录拷贝资源。
+- Pipeline 0.19.0 可选依赖 myno 0.3.0，需显式配置 `plugins.markdownRenderer`；未启用时仍有内置实现。不要声称已经删除 Pipeline 全部历史副本。
+- Nezus 当前源码的写作组件使用 `@akairos/myno/editor`，清单范围仍为 `^0.2.4`；不同消费方独立升级，不因本包发布就自动升级。
+- 公共基础依赖为 [语法插件](https://github.com/k7airos/milkdown-article-plugins) 与 [正文 CSS](https://github.com/k7airos/milkdown-article-style)；封面/贴图使用配套的 [Typeset Studio](https://github.com/k7airos/typeset-studio)，两者互不依赖。
 
-| Commit | 内容 |
-|---|---|
-| `1df05d2` | `MynoEditor` 四插槽：`uploadImage`（零图床厂商代码）/ `plugins` / `featureConfigs` / `onCreated`；`image-upload.ts` 从 nezus 搬入 + 测试随迁；菜单文案改短；`@milkdown/*` 转 **peerDependencies**；新增 `./menu` 子路径导出（node:test 无法 import CSS side-effect，测试走这条） |
-| `296f6b8` | 回合修复 nezus fork 修过的 bug：badge/kbd 应用前须 `removeMark` 全部现有标记，否则 `**[[kbd:…]]**` 嵌套 markdown 往返丢数据（迁移测试抓住的） |
-| `0eea766` | 默认语法预设（h2=pillar 呼吸柱等全类目）随 `MynoEditor` 常驻注入 `<style id="myno-editor-preset-css">`，消费方开箱即得 myno 观感 |
-| `edd892f` | **`styleConfig` 插槽**：接收 studio config JSON 核心字段（`editorVars`/`exportTheme`/`syntaxPresets`，`parseStyleConfig` 结果直接传也兼容）；`applyStyleConfig()` 运行时更新；`buildWechatThemeCss` 从带 juice 的 wechat-renderer.ts 挪到纯模块 themes.ts |
+## 使用与检查
 
-测试 11 个全过；typecheck/build 干净。
+```bash
+bun install
+bun run dev
+# 打开 http://localhost:5173/src/studio/studio.html
+bun run build
+bun test src/adapter.test.ts src/myno.test.ts
+```
 
-### nezus 侧（`/Users/aatrox/.oh-my-zzhub/core/nezus`）
+Vite 将 `/api` 代理到本机 18765；没有 Pipeline 时也能进入独立模式。库接入的 `@milkdown/*` 是 peer dependencies，宿主必须使用兼容的单份实例。无 CSS loader 的 Node 测试需要菜单时用 `@akairos/myno/menu`。
 
-| Commit | 内容 |
-|---|---|
-| `2573ca7` | `MilkdownEditor.client.vue` 瘦身为纯 Vue 胶水（保留 markdown 归一化 / `[[` 引用触发 / note:链接拦截 / 上传包装）；删除 fork 的 `milkdown-article-menu.ts`、`milkdown-image-upload.ts` 及其测试；`milkdown-article-plugins.test.ts` 改测 `@akairos/myno/menu` |
-| `b854c17` | 依赖升 0.2.3 |
-| `1ec2f00` | 依赖升 0.2.4 + `MilkdownEditor` 新增可选 `styleConfig` prop（响应式 watch，config 变化实时生效） |
+2026-10-15 已完成构建、定向检查、独立/宿主 Studio 行为检查，以及 Pipeline 生产 myno 路径的微信草稿创建和回读。这是发布时证据，后续变更需按影响范围重新验证。
 
-5 个消费方（CloudNoteWriter / LocalNoteWriter / NoteDetail / NavSiteContent / AssetMarkdownEditor）props 零改动。150 个 desktop 测试过，lint 干净，`nuxt build` 成功。
+## 尚未完成
 
-### 本地环境（今天已验证跑通）
-
-- nezus dev：http://localhost:4782/（`FRONTEND_ONLY=true` 模式，**API 走 akang，不是 nuxt 内部 server**）
-- akang-store-server dev：`pnpm dev`（nitro，4783）；其 postgres(15432)/redis(16380) 在 orbstack 容器
-- 用户已登录实测：斜杠菜单、行内工具栏正常；h2 样式已对齐（默认预设生效）
-
-## 下一步规划
-
-### 1. config 来源接线（最后一公里，等用户拍板）
-
-`MilkdownEditor` 的 `styleConfig` prop 已就位但**没人喂**。需用户决定 config 从哪读：
-- 方案 A：akang-store-server 出读取接口（多端一致，推荐）
-- 方案 B：像 pipeline 那样读本地 config 文件
-定好后：取 config JSON → `parseStyleConfig`（或直接传）→ `<MilkdownEditor :style-config="…" />`。
-
-### 2. pipeline studio 改 npm 依赖（消灭第三处拷贝）
-
-pipeline 的 wechat-preview studio（18765 端口）目前靠**手动复制 myno 源码**同步。改为 npm 依赖 `@akairos/myno`，与 nezus 同构，之后「只改核心库」即全端生效。涉及 pipeline 仓的 `build:wechat-preview` 产物重建。
-
-### 3. 待用户回归测试的可见变化
-
-- 行内工具栏 3→7 项；行内标记（高亮/kbd/徽章）**再点可取消**（myno 行为统一）
-- 斜杠菜单文案变短（「导读卡片 (INTRO)」→「导读」）
-- base64 粘贴图片自动走 `uploadImage` 上传回写 URL（失败保留原图可重试）
-
-### 4. 小尾巴
-
-- myno 0.2.x 的 `README`/CHANGELOG 未随插槽 API 更新（低优先级）
-- `MynoEditor` 给编辑器 DOM 加 `zzhub-wechat-article` class，无 CSS 作用（仅渲染器标记），nezus 侧无影响，知悉即可
-- 两个 dev server 由会话后台托管（4782 nezus / 4783 akang），日志在 `/tmp/nezus-dev.log`、`/tmp/akang-dev.log`，会话结束即停
-
-## 关键约定（已写入记忆 myno-nezus-editor-integration）
-
-- `@milkdown/*` 在 myno 是 peerDeps——消费方必须自带同版本，两份 ProseMirror 实例会出诡异 bug
-- node:test 环境 import myno 只能用 `@akairos/myno/menu`（`./editor` 带 CSS import）
-- badge/kbd 标记应用前必须清全部现有标记（markdown 往返限制）
-- nezus 本地 dev 架构：前端(4782) × akang 后端(4783) × orbstack(pgres/redis)，`FRONTEND_ONLY=true` 是正确配置
+Nezus 的 `styleConfig` prop 和 watch 已存在，尚未接入配置读取源。后续方向是业务后端读取接口，再向编辑器传配置；不要把这个计划描述成已有接口，也不要把账号凭据传给编辑器。

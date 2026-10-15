@@ -4,9 +4,21 @@
 
 `myno` 是面向微信公众号文章的所见即所得编辑器引擎与现代排版工作台。基于 `@milkdown/crepe` 封装，深度集成 `@akairos/milkdown-article-plugins` 与 `@akairos/milkdown-article-style`。
 
+## 生态与使用者
+
+| 项目 | 与 myno 的关系 |
+| --- | --- |
+| [zzhub-pipeline](https://github.com/k7airos/zzhub-pipeline) · [`@akairos/pipeline`](https://www.npmjs.com/package/@akairos/pipeline) | 从 0.19.0 起可选安装 myno，通过 `plugins.markdownRenderer` 使用本包的排版和工作台资源，负责浏览器运行、文件输出和草稿发布 |
+| [Milkdown Article Plugins](https://github.com/k7airos/milkdown-article-plugins) | myno 的直接依赖，提供扩展语法、输入转换、Markdown 序列化和微信组件渲染 |
+| [Milkdown Article Style](https://github.com/k7airos/milkdown-article-style) | myno 的直接依赖，提供正文 CSS 与默认主题变量 |
+| [Typeset Studio](https://github.com/k7airos/typeset-studio) | 配套的封面、卡片和多页 PNG 设计器，可与 myno 同时作为 Pipeline 插件；两者互不依赖 |
+| [Kairos Skills](https://github.com/k7airos/kairos-skills) | 供 Agent 使用的写作语法与发布编排说明 |
+
+Nezus 写作编辑器也是现有消费方，通过 `@akairos/myno/editor` 封装 Vue 接线。自己的 Web 应用也可直接复用该入口，无需安装 Pipeline；仅需调样式和复制文章时使用下面的独立工作台即可。
+
 ## 特色能力
 
-- **极简专业排版工作台**：告别参数堆叠，提供 6 组大师级精选风格套系（极简纸墨、典雅胭脂、冷灰高雅、薄荷清晨、极光深紫、商业经典），支持字号、行距、主色与 H2 风格快速调节。
+- **排版工作台**：提供预设风格套系与配色，支持字号、行距、主色与 H2 风格快速调节。
 - **斜杠菜单 (`/`)**：一键插入导读卡片 (`[!INTRO]`)、文末互动卡片 (`[!CTA]`)、5 种标准提示卡片 (`[!NOTE]` ~ `[!CAUTION]`) 与状态徽章。
 - **选区气泡工具栏**：划词浮现格式工具，支持文章专属高亮、按键、徽章标记。
 - **双模实时同步**：所见即所得编辑与 Markdown 源码模式无缝双向互转。
@@ -20,9 +32,29 @@ bun add @akairos/myno
 npm install @akairos/myno
 ```
 
+在自己的编辑器应用中使用时，还需提供同一套兼容的 `@milkdown/crepe`、`@milkdown/kit`（peer dependencies，当前范围 `^7.21.2`），避免重复的 Milkdown/ProseMirror 实例。
+
+```ts
+import { MynoEditor } from "@akairos/myno/editor";
+
+const editor = new MynoEditor({
+  root: document.getElementById("editor")!,
+  defaultValue: "## 开始写作\n\n正文内容。",
+  onMarkdownChange: markdown => console.log(markdown),
+});
+await editor.create();
+// 页面卸载时调用 await editor.destroy()
+```
+
+`uploadImage` 由宿主注入上传函数；`plugins`、`featureConfigs`、`onCreated` 用于宿主扩展。`styleConfig` / `applyStyleConfig()` 接收 `editorVars`、`exportTheme` 和 `syntaxPresets`，不代表支持完整导出配置中的自定义 CSS 或页首结构。Node 测试只测菜单时使用 `@akairos/myno/menu`，避免编辑器 CSS 导入。
+
 ## 独立启动工作台
 
+下面的命令在克隆本仓库后执行，npm 包没有独立 Studio CLI：
+
 ```bash
+git clone https://github.com/k7airos/myno.git
+cd myno
 bun install
 bun run dev
 ```
@@ -37,20 +69,25 @@ bun run dev
 
 从 0.3.0 起提供 `@akairos/myno/adapter`。插件仅提供本包构建的排版工作台和浏览器端排版入口，工作台支持调样式、导出 config。Chrome 启动、超时和 HTML 文件输出由 pipeline 现有运行时管理。myno 不携带浏览器自动化依赖，不启动浏览器或独立 HTTP 服务。
 
-开发时先执行 `bun run build`，在 pipeline 配置中使用本地构建入口：
+在 Pipeline 配置中启用 npm 入口：
 
 ```json
 {
   "plugins": {
     "markdownRenderer": {
-      "module": "/absolute/path/myno/dist/adapter.js",
+      "module": "@akairos/myno/adapter",
       "options": {}
     }
   }
 }
 ```
 
-使用 npm 安装时，将入口改为 `@akairos/myno/adapter`。pipeline 0.19.0 起将 myno 作为可选依赖提供，仍需在配置中显式启用；省略可选依赖安装时，可自行安装到 pipeline 可解析的依赖目录。
+Pipeline 0.19.0 起将 myno 作为可选依赖提供；省略可选依赖安装时，可自行安装到 Pipeline 可解析的依赖目录。源码联调先执行 `bun run build`，再把 `module` 指向本仓库 `dist/adapter.js` 的绝对路径。
+
+```bash
+zzp wechat-preview studio
+zzp wechat-export --markdown ./article.md --out ./article.html --no-preview
+```
 
 - `doctor()` 仅检查本包浏览器资源是否齐全。
 - `browser()` 返回 `{ scriptPath }`，由 pipeline 现有 Chrome 导出运行时加载。Markdown 读取、样式校验、本地图片、输出文件和预览文件由宿主处理。
