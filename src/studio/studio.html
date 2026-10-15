@@ -20,14 +20,14 @@
         <span class="brand-title">myno</span>
         <span class="brand-subtitle">WeChat Visual Studio</span>
       </div>
-      <span id="config-mode-badge" class="badge badge-subtle">账号配置</span>
+      <span id="config-mode-badge" class="badge badge-subtle">本地模式</span>
     </div>
 
     <!-- Center Config Selector -->
     <div class="header-center">
       <div class="config-selector-group">
-        <label for="account-select" class="selector-label">目标配置:</label>
-        <select id="account-select" class="select-control">
+        <label for="account-select" class="selector-label" hidden>目标配置:</label>
+        <select id="account-select" class="select-control" hidden>
           <option value="default">默认账号 (default)</option>
         </select>
         <button id="btn-import-config" class="btn btn-ghost btn-sm" title="导入已有 wechat-style.json 排版配置">
@@ -46,7 +46,7 @@
         <span>🔄 重置</span>
       </button>
 
-      <button id="btn-save" class="btn btn-primary btn-sm" title="保存当前调整至本地 config.json 的当前账号">
+      <button id="btn-save" class="btn btn-primary btn-sm" title="保存当前调整至本地 config.json 的当前账号" hidden>
         <span>💾 保存至账号</span>
       </button>
 
@@ -54,7 +54,7 @@
         <span>📋 一键复制到公众号</span>
       </button>
 
-      <a href="/" class="btn btn-ghost btn-sm" title="查看最近渲染记录">
+      <a id="history-link" href="/" class="btn btn-ghost btn-sm" title="查看最近渲染记录" hidden>
         <span>📜 历史记录</span>
       </a>
     </div>

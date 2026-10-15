@@ -1,6 +1,6 @@
 {
   "name": "@akairos/myno",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "WeChat article WYSIWYG editor & visual typography studio",
   "type": "module",
   "license": "MIT",
@@ -10,6 +10,11 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
+    "./adapter": {
+      "types": "./dist/adapter.d.ts",
+      "import": "./dist/adapter.js",
+      "default": "./dist/adapter.js"
+    },
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts",

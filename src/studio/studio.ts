@@ -12,32 +12,13 @@ import { parseStyleConfig, exportStyleConfigBlob, type StandaloneStyleConfig } f
 import { renderWechatHtml, type ArticleStructure } from "./wechat-renderer";
 import { buildWechatThemeCss } from "./themes";
 import type { WechatExportTheme } from "./themes";
+import { createLocalStudioConfig, loadStudioConfig } from "./studio-config";
 
-interface AccountData {
-  name: string;
-  customCssPath: string | null;
-  customCssContent: string;
-  theme: {
-    editorVars: Record<string, string>;
-    exportTheme: Partial<WechatExportTheme>;
-    syntaxPresets?: Record<string, string>;
-    structure?: ArticleStructure;
-  };
-  articleThemeCss?: string;
-  articleTheme?: string | null;
-  articleThemeStandalone?: boolean;
-}
-
-interface StudioConfigResponse {
-  defaultAccount: string;
-  accounts: Record<string, AccountData>;
-  plugins: WechatPluginDoc[];
-  sampleMarkdown: string;
-}
-
-let accounts: Record<string, AccountData> = {};
-let currentAccount = "default";
-let pluginsList: WechatPluginDoc[] = [];
+// 本地默认数据始终可用，宿主加载失败不会中断编辑器初始化。
+let studioConfig = createLocalStudioConfig();
+let accounts = studioConfig.accounts;
+let currentAccount = studioConfig.defaultAccount;
+let pipelineConnected = false;
 let latestWechatHtml = "";
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let showingHtmlSource = false;
@@ -102,6 +83,8 @@ const btnCopy = document.getElementById("btn-copy") as HTMLButtonElement;
 const btnToggleView = document.getElementById("btn-toggle-view") as HTMLButtonElement;
 const btnLoadSample = document.getElementById("btn-load-sample") as HTMLButtonElement;
 const btnClearMd = document.getElementById("btn-clear-md") as HTMLButtonElement;
+const historyLink = document.getElementById("history-link") as HTMLAnchorElement;
+const accountLabel = document.querySelector('label[for="account-select"]') as HTMLLabelElement;
 
 // ── Toast System ────────────────────────────────────────────────────────
 function showToast(message: string, type: "info" | "success" | "error" = "info") {
@@ -692,9 +675,13 @@ function applyAccountConfig(accountKey: string) {
   if (!account) return;
 
   const standalone = Boolean(account.articleThemeStandalone);
-  configModeBadge.textContent = standalone ? "独立排版文件" : "账号默认配置";
+  standaloneThemeName = "";
+  configModeBadge.textContent = !pipelineConnected ? "本地模式" : standalone ? "独立排版文件" : "账号默认配置";
   configModeBadge.className = `badge ${standalone ? "badge-primary" : "badge-subtle"}`;
 
+  accountSelect.hidden = accountLabel.hidden = !pipelineConnected;
+  btnSave.hidden = historyLink.hidden = !pipelineConnected;
+  btnReset.title = pipelineConnected ? "恢复当前账号默认样式" : "恢复本地默认样式";
   btnSave.disabled = Boolean(account.articleThemeStandalone);
   btnSave.title = account.articleThemeStandalone
     ? "当前账号引用独立配置，请通过「导出配置」保存调整后替换原文件"
@@ -804,47 +791,57 @@ async function initStudio() {
   bindColorPair(pickerQuoteColor, hexQuoteColor, () => scheduleRender(20));
   bindColorPair(pickerDividerColor, hexDividerColor, () => scheduleRender(20));
 
+  const localMarkdown = studioConfig.sampleMarkdown;
+  editorMarkdown.value = localMarkdown;
+  const configRequest = loadStudioConfig();
+  let initialMarkdown = localMarkdown;
   try {
-    const res = await fetch("/api/studio/config");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = (await res.json()) as StudioConfigResponse;
-
-    accounts = data.accounts || {};
-    currentAccount = data.defaultAccount || "default";
-    pluginsList = data.plugins || [];
-
-    // Account selector
-    accountSelect.innerHTML = "";
-    for (const [key, acc] of Object.entries(accounts)) {
-      const opt = document.createElement("option");
-      opt.value = key;
-      opt.textContent = `${acc.name || key} (${key})`;
-      if (key === currentAccount) opt.selected = true;
-      accountSelect.appendChild(opt);
-    }
-
-    const initialMd = data.sampleMarkdown || "# 微信排版标题\n\n欢迎使用 myno 微信排版工作台！";
-    editorMarkdown.value = initialMd;
-
-    // Mount MynoEditor (Milkdown Crepe)
+    // 编辑器先用本地默认值创建，配置接口不是启动前提。
     if (milkdownEditorRoot) {
       mynoEditor = new MynoEditor({
         root: milkdownEditorRoot,
-        defaultValue: initialMd,
+        defaultValue: localMarkdown,
         onMarkdownChange: (md) => {
           editorMarkdown.value = md;
           scheduleRender(40);
         },
       });
       await mynoEditor.create();
+      initialMarkdown = mynoEditor.getMarkdown();
     }
-
-    renderSyntaxCards(pluginsList);
     applyAccountConfig(currentAccount);
+    renderSyntaxCards(studioConfig.plugins);
   } catch (err) {
-    console.error("Failed to load studio config:", err);
-    showToast("无法加载服务器配置，使用本地默认设置", "error");
-    scheduleRender(20);
+    console.error("Failed to initialize editor:", err);
+    await mynoEditor?.destroy();
+    mynoEditor = null;
+    showToast("编辑器初始化失败，可切换 Markdown 源码模式继续编辑", "error");
+  }
+
+  const result = await configRequest;
+  if (result.source === "pipeline") {
+    studioConfig = result.config;
+    accounts = studioConfig.accounts;
+    currentAccount = studioConfig.defaultAccount;
+    pipelineConnected = true;
+    accountSelect.innerHTML = "";
+    for (const [key, account] of Object.entries(accounts)) {
+      const option = document.createElement("option");
+      option.value = key;
+      option.textContent = `${account.name} (${key})`;
+      option.selected = key === currentAccount;
+      accountSelect.appendChild(option);
+    }
+    // 只替换尚未编辑的示例正文，迟到的配置不能覆盖用户输入。
+    if (getActiveMarkdown() === initialMarkdown) {
+      editorMarkdown.value = studioConfig.sampleMarkdown;
+      mynoEditor?.setMarkdown(studioConfig.sampleMarkdown);
+    }
+    applyAccountConfig(currentAccount);
+    renderSyntaxCards(studioConfig.plugins);
+  } else if (result.error) {
+    configModeBadge.textContent = "本地模式 · 配置未加载";
+    showToast("未能加载 pipeline 配置，当前使用本地默认配置；可正常编辑和导出", "info");
   }
 }
 
@@ -937,10 +934,8 @@ tabBtnSyntax?.addEventListener("click", () => {
 });
 
 // Load sample / clear
-btnLoadSample?.addEventListener("click", async () => {
-  const res = await fetch("/api/studio/config");
-  const data = (await res.json()) as StudioConfigResponse;
-  const sample = data.sampleMarkdown || "";
+btnLoadSample?.addEventListener("click", () => {
+  const sample = studioConfig.sampleMarkdown;
   editorMarkdown.value = sample;
   if (mynoEditor) mynoEditor.setMarkdown(sample);
   scheduleRender(20);
@@ -968,13 +963,13 @@ btnToggleView?.addEventListener("click", () => {
 // Reset
 btnReset?.addEventListener("click", () => {
   applyAccountConfig(currentAccount);
-  showToast("已重置为当前账号默认样式", "info");
+  showToast(pipelineConnected ? "已重置为当前账号默认样式" : "已重置为本地默认样式", "info");
 });
 
 // Save to config.json
 btnSave?.addEventListener("click", async () => {
   const account = accounts[currentAccount];
-  if (!account) return;
+  if (!pipelineConnected || !account || account.articleThemeStandalone) return;
   const { structure, ...theme } = readStyleControls();
   const { headerImageUrl: _headerImageUrl, ...savedStructure } = structure;
   const payload = {
