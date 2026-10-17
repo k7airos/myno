@@ -15,8 +15,8 @@ import { createDataImageUploadPlugin, dataImageFile } from "./image-upload";
 import { imageMarkdownPlugins } from "./image-markdown";
 // 各语法类目的默认预设（h2 呼吸柱、引用样式等）是 myno 的默认观感，随编辑器一起生效；
 // studio 等宿主若在运行时注入自己的预设 CSS，后注入者按文档顺序覆盖这里的默认。
-import { buildCombinedPresetsCss } from "../studio/syntax-presets";
-import { buildWechatThemeCss, getWechatPreviewTheme } from "../studio/themes";
+import type { MynoStyleConfig } from "../style-config";
+import { buildEditorStyleCss, hasExternalStyleResource, observeCalloutTitles } from "./style-config-css";
 
 import "@milkdown/crepe/theme/common/style.css";
 import "@milkdown/crepe/theme/frame.css";
@@ -41,19 +41,21 @@ export interface MynoEditorOptions {
    * 排版 config（studio 导出的那套 JSON 的核心字段）：选中预设替换默认、主题变量覆盖观感。
    * 结构上兼容 parseStyleConfig 的结果——多余字段忽略；运行时更新用 applyStyleConfig()。
    */
-  styleConfig?: {
-    editorVars?: Record<string, string>;
-    exportTheme?: Record<string, string | undefined>;
-    syntaxPresets?: Record<string, string>;
-  };
+  styleConfig?: Partial<MynoStyleConfig>;
 }
 
-const PRESET_STYLE_ID = "myno-editor-preset-css";
+let editorStyleSequence = 0;
 
 export class MynoEditor {
   private crepe: Crepe | null = null;
   private options: MynoEditorOptions;
   private isDestroyed = false;
+  // 每个编辑器拥有独立 CSS 作用域，多个文章或宿主控件互不覆盖。
+  private styleScope = `myno-style-${++editorStyleSequence}`;
+  private styleTag: HTMLStyleElement | null = null;
+  private headerImage: HTMLImageElement | null = null;
+  private footer: HTMLElement | null = null;
+  private stopCalloutObservation: (() => void) | null = null;
 
   constructor(options: MynoEditorOptions) {
     this.options = options;
@@ -133,31 +135,38 @@ export class MynoEditor {
     });
 
     this.crepe = crepe;
+    this.stopCalloutObservation = observeCalloutTitles(root);
+    this.applyStyleConfig(this.options.styleConfig);
     return crepe;
   }
 
   /** 运行时更新排版样式（config 异步加载完成后调用；undefined = 回到出厂默认）。 */
   applyStyleConfig(styleConfig?: MynoEditorOptions["styleConfig"]) {
-    let styleTag = document.getElementById(PRESET_STYLE_ID) as HTMLStyleElement | null;
-    if (!styleTag) {
-      styleTag = document.createElement("style");
-      styleTag.id = PRESET_STYLE_ID;
-      document.head.appendChild(styleTag);
+    this.options.styleConfig = styleConfig;
+    this.options.root.classList.add(this.styleScope);
+    if (!this.styleTag) {
+      this.styleTag = document.createElement("style");
+      document.head.appendChild(this.styleTag);
     }
-    const presets = buildCombinedPresetsCss(styleConfig?.syntaxPresets ?? {});
-    const hasTheme = styleConfig && (Object.keys(styleConfig.editorVars ?? {}).length > 0
-      || Object.keys(styleConfig.exportTheme ?? {}).filter(k => styleConfig.exportTheme![k] != null).length > 0);
-    // 导出主题的 Partial 字段合并到默认主题底上，编辑器内即所见即所得
-    const themeCss = hasTheme
-      ? buildWechatThemeCss(
-          styleConfig!.editorVars ?? {},
-          getWechatPreviewTheme("default", {
-            editorVars: styleConfig!.editorVars,
-            exportTheme: styleConfig!.exportTheme as never,
-          }).exportTheme,
-        )
-      : "";
-    styleTag.textContent = `${presets}\n${themeCss}`;
+    this.styleTag.textContent = buildEditorStyleCss(styleConfig, `.${this.styleScope}`);
+    if (!this.crepe) return;
+    // 装饰节点放在可编辑正文之外，不能回写到 Markdown。
+    const header = styleConfig?.structure?.headerImageUrl;
+    if (header && /^data:image\/(?:png|jpeg|gif|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(header)) {
+      this.headerImage ??= document.createElement("img");
+      this.headerImage.src = header;
+      this.headerImage.alt = "文章顶部图片";
+      this.headerImage.style.cssText = "display:block;width:100%;height:auto;margin-bottom:24px";
+      this.options.root.prepend(this.headerImage);
+    } else { this.headerImage?.remove(); this.headerImage = null; }
+    const footerText = styleConfig?.exportTheme?.footerText;
+    if (footerText) {
+      this.footer ??= document.createElement("div");
+      this.footer.textContent = footerText;
+      const footerStyle = styleConfig?.exportTheme?.footerStyle ?? "";
+      this.footer.style.cssText = hasExternalStyleResource(footerStyle) ? "" : footerStyle;
+      this.options.root.append(this.footer);
+    } else { this.footer?.remove(); this.footer = null; }
   }
 
   getMarkdown(): string {
@@ -189,6 +198,13 @@ export class MynoEditor {
 
   async destroy() {
     this.isDestroyed = true;
+    this.stopCalloutObservation?.();
+    this.stopCalloutObservation = null;
+    this.styleTag?.remove();
+    this.styleTag = null;
+    this.headerImage?.remove(); this.headerImage = null;
+    this.footer?.remove(); this.footer = null;
+    this.options.root.classList.remove(this.styleScope);
     if (this.crepe) {
       await this.crepe.destroy();
       this.crepe = null;

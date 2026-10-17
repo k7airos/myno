@@ -14,6 +14,7 @@ import { buildWechatThemeCss } from "./themes";
 import type { WechatExportTheme } from "./themes";
 import { createLocalStudioConfig, loadStudioConfig } from "./studio-config";
 import { imageMarkdownPlugins } from "../editor/image-markdown";
+import { brandTint } from "../style-config";
 
 // 本地默认数据始终可用，宿主加载失败不会中断编辑器初始化。
 let studioConfig = createLocalStudioConfig();
@@ -142,13 +143,6 @@ function extractFrontmatter(markdown: string): { frontmatter: Record<string, unk
 }
 
 /** 品牌色衍生的卡片底色（--brand-bg 系），非 6 位 hex 时返回 null 以保留账号默认值。 */
-function brandTint(hex: string, alpha: number): string | null {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return null;
-  const n = parseInt(m[1], 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
-}
-
 // ── Read Style Controls ─────────────────────────────────────────────────
 function readStyleControls() {
   const account = accounts[currentAccount] || {

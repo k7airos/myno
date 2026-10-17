@@ -1,3 +1,4 @@
 export * from "./myno-editor";
 export * from "./article-menu";
 export * from "./image-upload";
+export * from "./style-controls";
