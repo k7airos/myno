@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.4
+
+- Stabilize opening heading margins across unfocused, cursor-focused, and text-selected states, covering ProseMirror virtual cursor and non-editable widgets.
+
 ## v0.4.3
 
 - Fix opening heading top gap when ProseMirror-widget is present in unfocused editor state.
