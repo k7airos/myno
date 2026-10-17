@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.2
+
+- Fix opening heading top gap when ProseMirror-widget is present in unfocused editor state.
+- Prevent document vertical jump when selecting text and triggering inline formatting toolbar.
+
 ## v0.4.1
 
 - Bind image-ratio metadata only to its originally adjacent image without consuming earlier consecutive comments.

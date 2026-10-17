@@ -110,8 +110,21 @@
 .milkdown .editor > h1:first-child,
 .milkdown .editor > h2:first-child,
 .milkdown .editor > h3:first-child,
-.milkdown .editor > h4:first-child {
-  margin-top: 0.25em;
+.milkdown .editor > h4:first-child,
+.milkdown .editor > h5:first-child,
+.milkdown .editor > h6:first-child,
+.milkdown .editor > .ProseMirror-widget + h1,
+.milkdown .editor > .ProseMirror-widget + h2,
+.milkdown .editor > .ProseMirror-widget + h3,
+.milkdown .editor > .ProseMirror-widget + h4,
+.milkdown .editor > .ProseMirror-widget + h5,
+.milkdown .editor > .ProseMirror-widget + h6,
+.milkdown .editor > .ProseMirror-widget + .ProseMirror-widget + h1,
+.milkdown .editor > .ProseMirror-widget + .ProseMirror-widget + h2,
+.milkdown .editor > .ProseMirror-widget + .ProseMirror-widget + h3,
+.milkdown .editor > .ProseMirror-widget + .ProseMirror-widget + h4,
+.milkdown .editor > :nth-child(1 of :not(.ProseMirror-widget)):is(h1, h2, h3, h4, h5, h6) {
+  margin-top: 0.25em !important;
 }
 
 /* Title sticks to following paragraph (Juice bakes margin-top onto that p) */
