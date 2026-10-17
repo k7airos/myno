@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.4.2
+## v0.4.3
 
 - Fix opening heading top gap when ProseMirror-widget is present in unfocused editor state.
 - Prevent document vertical jump when selecting text and triggering inline formatting toolbar.
