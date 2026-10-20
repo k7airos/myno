@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.7
+
+- Declare standard `text-size-adjust: 100%` next to the `-webkit-` form so DOM implementations that drop vendor-prefixed properties export the same article root style as Chrome.
+- Treat `initial` border components as their initial values (`none`, `medium`, `currentcolor`) when expanding border shorthands, so `border-left: 0` is removed consistently across DOM implementations.
+
 ## v0.4.6
 
 - Match inline code with a simple `code` selector and skip code-block descendants in JS, so browser export renders identically in DOM implementations without `:not()` combinator support (such as happy-dom).
