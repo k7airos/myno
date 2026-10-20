@@ -28,6 +28,7 @@
   overflow-wrap: break-word;
   word-break: break-word;
   -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 .milkdown .editor p {
