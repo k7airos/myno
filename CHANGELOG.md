@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.4.6
+
+- Match inline code with a simple `code` selector and skip code-block descendants in JS, so browser export renders identically in DOM implementations without `:not()` combinator support (such as happy-dom).
+
+## v0.4.5
+
+- Expose host style config and scoped editor controls through `style-config` and `style-controls` package exports.
+- Scope editor CSS per instance, render header/footer decorations, and harden runtime style resource validation.
+
 ## v0.4.4
 
 - Stabilize opening heading margins across unfocused, cursor-focused, and text-selected states, covering ProseMirror virtual cursor and non-editable widgets.
