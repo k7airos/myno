@@ -2,12 +2,15 @@
 
 > 🎨 WeChat article WYSIWYG editor & visual typography studio.
 
+> 🐾 想直接用？[兔狲 · 公众号助手（wx-publish-studio）](https://github.com/k7airos/wx-publish-studio) 是自托管的公众号图文工作台：写文章、配样式与封面、预览后存入你自己的公众号草稿箱，`docker compose up` 一条命令起全套。其中的文章正文编辑器就是 myno。
+
 `myno` 是面向微信公众号文章的所见即所得编辑器引擎与现代排版工作台。基于 `@milkdown/crepe` 封装，集成 `@akairos/milkdown-article-plugins`，统一维护正文 CSS、默认主题变量与微信导出样式。
 
 ## 生态与使用者
 
 | 项目 | 与 myno 的关系 |
 | --- | --- |
+| [wx-publish-studio](https://github.com/k7airos/wx-publish-studio) | 自托管的公众号图文工作台，用 myno 作为文章正文的编辑器与渲染器，写好的文章再配封面、预览并存入公众号草稿箱 |
 | [zzhub-pipeline](https://github.com/k7airos/zzhub-pipeline) · [`@akairos/pipeline`](https://www.npmjs.com/package/@akairos/pipeline) | 从 0.19.0 起可选安装 myno，通过 `plugins.markdownRenderer` 使用本包的排版和工作台资源，负责浏览器运行、文件输出和草稿发布 |
 | [Milkdown Article Plugins](https://github.com/k7airos/milkdown-article-plugins) | myno 的直接依赖，提供扩展语法、输入转换、Markdown 序列化和微信组件渲染 |
 | [Milkdown Article Style](https://github.com/k7airos/milkdown-article-style) | 旧版兼容包；从 myno 0.3.1 起，正文 CSS 与默认主题变量收归 myno |
